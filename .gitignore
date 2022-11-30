@@ -3,5 +3,6 @@
 /.vscode
 _*
 demand.csv
+demand copy.csv
 general_functions.py
 main_wip.py
