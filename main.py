@@ -20,7 +20,7 @@ if st.session_state.first_run:
 
 historical_demand_monthly=st.session_state.hdm
 historical_demand_yearly=st.session_state.hdy
-historical_demand_quarterly=st.session_state.hd
+historical_demand_quarterly=st.session_state.hdy
 
 #demand statistics
 st.write('Demand statistics')
