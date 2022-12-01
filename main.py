@@ -10,24 +10,20 @@ from forecasting_metrics import evaluate
 from pmdarima.arima import auto_arima
 
 #intialize the session state variable
-
 if 'first_run' not in st.session_state:
     st.session_state.first_run = True
 
 if st.session_state.first_run:
     #prepare_dataset(filename='dfh_thai.csv', item='84263773',  rows='All')  ##item='All', rows='All' are deafult
-    prepare_dataset(filename='demand.csv', item='All',  rows='All')  ##item='All', rows='All' are deafult
+    prepare_dataset(filename='demand.csv', item='84263773',  rows='All')  ##item='All', rows='All' are deafult
     st.session_state.first_run = False
 
 historical_demand_monthly=st.session_state.hdm
 historical_demand_yearly=st.session_state.hdy
-historical_demand_quarterly=st.session_state.hdq
+historical_demand_quarterly=st.session_state.hd
 
 #demand statistics
 st.write('Demand statistics')
-
-#show historical_demand_yearly with years as columns and items as rows, order by total demand, ad a colum with total demand, first column header is item
-#st.write(historical_demand_yearly.pivot_table(index='item', columns='year', values='demand', aggfunc='sum', fill_value=0, margins=True, margins_name='Total'))
 
 #ask the user to select the item to be analyzed, order items by total demand
 item = st.selectbox('Select item', historical_demand_yearly.groupby('item')['demand'].sum().sort_values(ascending=False).index)
@@ -41,16 +37,15 @@ st.line_chart(historical_demand_monthly[historical_demand_monthly['item'] == ite
 
 #count the the year_months in the period for the selected item
 year_months = historical_demand_monthly[historical_demand_monthly['item'] == item]['year_month'].nunique()
-year_months
+
 
 #ask user to define the number of periods to forecast
 periods=st.slider('Number of periods to forecast', min_value=1, max_value=12, key='periods')
 historical_periods=st.slider('Historical periods to analyze', min_value=1, max_value=year_months+1, key='historical_periods', value=year_months)
 test_periods=st.slider('Test periods', min_value=1, max_value=year_months+1, key='test_periods', value=round(year_months*0.2))
+
 #ask the user to choose if using ARIMA, Prophet or both
 model_list = st.multiselect('Select model', ['ARIMA', 'Prophet'], default=['ARIMA','Prophet'])
-
-
 
 #show a button to run the forecast
 if st.button('Run forecast'):
@@ -97,7 +92,6 @@ if st.button('Run forecast'):
                                     stepwise=True)
 
         #perform predictions on the test dataset
-
         forecast = pd.DataFrame(arima_model.predict(n_periods=periods+test_periods))
         forecast.columns = ['demand']
         
@@ -114,10 +108,12 @@ if st.button('Run forecast'):
         st.line_chart(full_forecast)
         full_forecast
 
-        #calculate the MAPE
+        #evaluate the forecast
+        st.write ('Valutazione forecast')
+
+        #prepare the a dataset
         forecast_eval = full_forecast.iloc[train_periods:len(df)]
 
-        st.write ('Valutazione forecast')
         #show only the forecast and the test columns
         st.write(forecast_eval[['forecast', 'test']])
         
@@ -139,39 +135,44 @@ if st.button('Run forecast'):
         df_pro = df.rename(columns={'year_month': 'ds', 'demand': 'y'})
         st.write('Historical dataset', df_pro)
 
-        # %%
         #fit the model
         my_model.fit(df_pro)
 
         # %%
-        #create the future dates for which we want to predict the values
-        future_dates = my_model.make_future_dataframe(periods, freq='M')
-        st.write('Future dates',future_dates)
+        #create the full period: historical period + forecast period
+        full_period = my_model.make_future_dataframe(periods, freq='M')
 
         # %%
         #predict the values for the next 365 days
-        prediction = my_model.predict(future_dates)
+        forecast_pro = my_model.predict(full_period)
 
-        #full_forecast_pro = pd.concat([df_pro, prediction], axis=1)
-        full_forecast_pro = pd.concat([prediction['ds': 'year_month', 'yhat': 'demand'],df], axis=1)
-        full_forecast_pro
+        #create forecast_pro_renamed with only the columns ds and yhat renamed into year_month and demand
+        forecast_pro_renamed = forecast_pro[['ds', 'yhat']].rename(columns={'ds': 'year_month', 'yhat': 'demand'})
+        forecast_pro_renamed
 
         #show results
         #st.write('Prophet prediction', prediction[['ds', 'yhat', 'yhat_lower', 'yhat_upper']])
 
+        if True:
+            #DA COMPLETARE CON:
+            #gestire i valori negativi
+            #inserire concetto di train e test e forecast (come fatto con ARIMA)
+            #inserire grafico con forecast e test
+            #esplicitare i risultati
+            #idealmente compattare i due codici in un unico codice per facilitare la lettura e gestione
 
+            full_forecast_pro=forecast_pro_renamed
+            forecast_pro_eval = full_forecast_pro.iloc[train_periods:len(df)]
 
-        forecast_pro_eval = full_forecast_pro.iloc[train_periods:len(df)]
+            st.write ('Valutazione forecast prophet')
+            #show only the forecast and the test columns
+            #forecast_pro_eval = forecast_pro_eval[['ds', 'yhat', 'y']]
 
-        st.write ('Valutazione forecast prophet')
-        #show only the forecast and the test columns
-        #forecast_pro_eval = forecast_pro_eval[['ds', 'yhat', 'y']]
+            
+            #show evaluation metrics
+            #evaluate_pro_metrics = evaluate(forecast_pro_eval['test'], forecast_pro_eval['forecast'], metrics=('mape', 'maape'))
+            #evaluate_pro_metrics
 
+            #Warning: overfitting... the model is not able to predict the future values
+            # https://machinelearningmastery.com/time-series-forecasting-with-prophet-in-python/ 
         
-        #show evaluation metrics
-        evaluate_pro_metrics = evaluate(forecast_pro_eval['test'], forecast_pro_eval['forecast'], metrics=('mape', 'maape'))
-        evaluate_pro_metrics
-
-        #Warning: overfitting... the model is not able to predict the future values
-        # https://machinelearningmastery.com/time-series-forecasting-with-prophet-in-python/ 
-    
