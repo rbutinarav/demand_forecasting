@@ -119,6 +119,9 @@ if st.button('Run forecast'):
         forecast_ets = pd.DataFrame()
         forecast_ets['ETS'] = ets_model.predict(start=train_periods, end=len(df)+periods)
 
+        #replace all negative values with 0
+        forecast_ets[forecast_ets < 0] = 0
+
         #add to the forecast dataframe
         forecast = pd.concat([forecast, forecast_ets], axis=1)
 
@@ -186,6 +189,5 @@ if st.button('Run forecast'):
         #MAAPE https://www.sciencedirect.com/science/article/pii/S0169207016000121
     
 
-    #TO SOLVE: the forecast is not showing the last period
     #TO IMPLEMENT: create a function to run the forecast for all the items in the dataset
     
