@@ -58,13 +58,18 @@ def prepare_dataset(filename, item="All", rows="All"):   #calls the ts_load func
 
     #create a new dataset totaling the demand for each month and item, reset index, rename columns
     historical_demand_monthly = historical_demand.groupby(['item', 'year_month'])['demand'].sum().reset_index().rename(columns={'demand': 'demand'})
+    #set the index to year_month
+    #historical_demand_monthly = historical_demand_monthly.set_index('year_month')
 
     #create a new dataset totaling the demand for each quarter and item, reset index, rename columns
     historical_demand_quarterly = historical_demand.groupby(['item', 'year_quarter'])['demand'].sum().reset_index().rename(columns={'demand': 'demand'})
+    #set the index to year_quarter
+    #historical_demand_quarterly = historical_demand_quarterly.set_index('year_quarter')
 
     #create a new dataset totaling the demand for each year and item, reset index, rename columns
     historical_demand_yearly = historical_demand.groupby(['item', 'year'])['demand'].sum().reset_index().rename(columns={'demand': 'demand'})
-
+    #set the index to year
+    #historical_demand_yearly = historical_demand_yearly.set_index('year')
 
     #PERSIST IN SESSION STATE VARIABLES
     st.session_state.hdm=historical_demand_monthly
