@@ -46,7 +46,7 @@ historical_periods=st.slider('Historical periods to analyze', min_value=1, max_v
 test_periods=st.slider('Test periods', min_value=1, max_value=year_months+1, key='test_periods', value=min(round(year_months*0.2),12))
 
 #ask the user to choose if using ARIMA, Prophet or both
-model_list = st.multiselect('Select model', ['ARIMA', 'Prophet', 'ETS'], default=['ARIMA'])
+model_list = st.multiselect('Select model', ['ARIMA', 'Prophet', 'ETS'], default=['ARIMA', 'ETS', 'Prophet'])
 
 #show a button to run the forecast
 if st.button('Run forecast'):
@@ -81,7 +81,7 @@ if st.button('Run forecast'):
     if 'ARIMA' in model_list:
         #2. RUN FORECASTING USING ARIMA
 
-        st.write('Forecasting using ARIMA')
+        #st.write('Forecasting using ARIMA')
         
         #build the model
         arima_model = auto_arima   (train, #training dataset
@@ -100,27 +100,33 @@ if st.button('Run forecast'):
                                     stepwise=True)
 
         #predict values for the test dataset and future periods        
-        forecast['ARIMA'] = pd.DataFrame(arima_model.predict(n_periods=test_periods+periods))
+        forecast_arima = pd.DataFrame(arima_model.predict(test_periods+periods))
+
+        #add to the forecast dataframe
+        forecast_arima.columns = ['ARIMA']
+        forecast = pd.concat([forecast, forecast_arima], axis=1)
 
 
     if 'ETS' in model_list:
     ##4. RUN FORECASTING USING EXPONENTIAL SMOOTHING
-        st.write('Forecasting using Exponential Smoothing')
+        #st.write('Forecasting using Exponential Smoothing')
 
         #build the model
         ets_model = ets(train, trend='add', seasonal='add', seasonal_periods=12).fit()
 
-        #predict values for the test dataset and future periods      
-        forecast['ETS'] = ets_model.predict(start=train_periods, end=len(df)+periods)
+        #predict values for the test dataset and future periods
+        #inizialize forecast_ets dataframe
+        forecast_ets = pd.DataFrame()
+        forecast_ets['ETS'] = ets_model.predict(start=train_periods, end=len(df)+periods)
 
-        st.write('ETS forecast', forecast)
-
+        #add to the forecast dataframe
+        forecast = pd.concat([forecast, forecast_ets], axis=1)
 
 
     if 'Prophet' in model_list:
     ##5. RUN FORECASTING USING PROPHET
 
-        st.write('Forecasting using Prophet')
+        #st.write('Forecasting using Prophet')
         from prophet import Prophet
 
         pro_model = Prophet()
@@ -128,49 +134,26 @@ if st.button('Run forecast'):
         #create a df_pro dataframe with the columns ds and y renamed into year_month and demand
         #restore the index
         df_pro = df.reset_index(inplace=True)
-
         df_pro = df.rename(columns={'year_month': 'ds', 'demand': 'y'})
-        #st.write('Historical dataset', df_pro)
 
         #build the model
         pro_model.fit(df_pro)
 
-        #predict values for the test dataset and future periods
-        future = pro_model.make_future_dataframe(periods=periods, freq='M')
-        forecast_pro = pro_model.predict(future)
-
-        #st.write('Forecast_pro', forecast_pro)
+        #create a dataframe with the testing and future periods
+        future = pro_model.make_future_dataframe(periods=periods, freq='MS', include_history=True)
+        test_and_future = future.iloc[train_periods:]
+        #predict values
+        forecast_pro = pro_model.predict(test_and_future)
 
         #create forecast_pro_renamed with only the columns ds and yhat renamed into year_month and demand
         forecast_pro_renamed = forecast_pro[['ds', 'yhat']].rename(columns={'ds': 'year_month', 'yhat': 'Prophet'})
-        #st.write('Forecast_pro_renamed', forecast_pro_renamed)
-        #reset the index
         forecast_pro_renamed = forecast_pro_renamed.set_index('year_month')
-        forecast['Prophet']=forecast_pro_renamed
 
+        #replace all negative values with 0
+        forecast_pro_renamed[forecast_pro_renamed < 0] = 0
 
-        if True:
-            #DA COMPLETARE CON:
-            #gestire i valori negativi
-            #inserire concetto di train e test e forecast (come fatto con ARIMA)
-            #inserire grafico con forecast e test
-            #esplicitare i risultati, usando anche le analitiche di Prophet
-            #idealmente compattare i due codici in un unico codice per facilitare la lettura e gestione
-
-            full_forecast_pro=forecast_pro_renamed
-            forecast_pro_eval = full_forecast_pro.iloc[train_periods:len(df)]
-
-            st.write ('Valutazione forecast prophet')
-            #show only the forecast and the test columns
-            #forecast_pro_eval = forecast_pro_eval[['ds', 'yhat', 'y']]
-
-            
-            #show evaluation metrics
-            #evaluate_pro_metrics = evaluate(forecast_pro_eval['test'], forecast_pro_eval['forecast'], metrics=('mape', 'maape'))
-            #evaluate_pro_metrics
-
-            #Warning: overfitting... the model is not able to predict the future values
-            # https://machinelearningmastery.com/time-series-forecasting-with-prophet-in-python/ 
+        #add to the forecast dataframe
+        forecast = pd.concat([forecast, forecast_pro_renamed], axis=1)
 
 
     #if any model is selected, show the forecast and the evaluation metrics
@@ -201,4 +184,8 @@ if st.button('Run forecast'):
         #show the evaluation metrics
         st.write('Evaluation metrics:', evaluate_metrics)
         #MAAPE https://www.sciencedirect.com/science/article/pii/S0169207016000121
-        
+    
+
+    #TO SOLVE: the forecast is not showing the last period
+    #TO IMPLEMENT: create a function to run the forecast for all the items in the dataset
+    
