@@ -1,6 +1,8 @@
 /.env
 /__pycache__
 /.vscode
+/log/*
+/forecast_results/*
 _*
 demand.csv
 general_functions.py
