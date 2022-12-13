@@ -1,1 +1,1 @@
-pmdarima.arima
+pmdarima
