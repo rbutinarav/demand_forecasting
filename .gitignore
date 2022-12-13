@@ -3,7 +3,7 @@
 /.vscode
 /log/*
 /forecast_results/*
+/dataset/*
 _*
-demand.csv
-general_functions.py
-main_wip.py
+load_sa.py
+

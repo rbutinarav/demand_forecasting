@@ -5,7 +5,7 @@
 
 import streamlit as st
 import pandas as pd
-from time_series_load_functions import prepare_dataset
+from forecasting_dataset_load import prepare_dataset
 import os
 
 #intialize the session state variable
@@ -18,44 +18,43 @@ if 'show_debug' not in st.session_state:
 if 'hdm' not in st.session_state:
     st.session_state.hdm = pd.DataFrame()
 
-#0. LOAD THE DATASET
+
+#0.0 SHOW MAIN PAGE
+
+st.write('Demand Forecasting App')
+
+#show a button "load a new file" to load a new file
+if st.session_state.first_run == False:
+    if st.sidebar.button('Load a new file'):
+        st.session_state.first_run = True
+        st.experimental_rerun()
+
+#add a selectbox on the left to select if showing debug information
+st.session_state.show_debug = st.sidebar.checkbox('Show debug information', value=False)
+
+#add a selectbox on the left of the screen to select if showing statistics for the full dataset
+show_statistics = st.sidebar.checkbox('Show statistics for the full dataset', value=False)
 
 
-if False: #check if the file exists before opening it, if not ask the user to upload it
-    if st.session_state.first_run:
-        #load the dataset
-        myfilename='demand.csv'
-        #check if it exists before opening it
-        if os.path.exists(myfilename)==False:
-            #ask the user to upload the file
-            st.write('Please upload the file')
-            with st.form(key='my_form'):
-                uploaded_file = st.file_uploader("Choose a file", type="csv")
-                submit_button = st.form_submit_button(label='Submit')
-            if uploaded_file is not None:
-                myfilename = uploaded_file.name
 
-        if os.path.exists(myfilename)==True:
-            prepare_dataset(filename=myfilename, item='All',  rows='All')  ##item='All', rows='All' are deafult
-            st.session_state.first_run = False
+#0.1 LOAD THE DATASET
 
-if True:
-    if st.session_state.first_run:
-        prepare_dataset(filename='demand1.csv', item='All',  rows='All')  ##item='All', rows='All' are deafult
+if st.session_state.first_run:
+    historical_demand_monthly = prepare_dataset(filename='demand1.csv', item='All',  rows='All')  ##item='All', rows='All' are deafult
+    
+    if historical_demand_monthly is not None:
+        st.session_state.hdm = historical_demand_monthly
         st.session_state.first_run = False
+        #rerun the program
+        st.experimental_rerun()
 
 if st.session_state.first_run == False:    
     historical_demand_monthly=st.session_state.hdm
 
-    #demand statistics
-    st.write('Demand statistics')
 
-    #add a selectbox on the left to select if showing debug information
-    st.session_state.show_debug = st.sidebar.checkbox('Show debug information', value=False)
+#0.2 DISPLAY MAIN PAGE
 
-    #add a selectbox on the left of the screen to select if showing statistics for the full dataset
-    show_statistics = st.sidebar.checkbox('Show statistics for the full dataset', value=False)
-
+if historical_demand_monthly is not None: #check if proper dataset was loaded
 
     #1. GET AND DISPLAY SOME STATISTICS ON THE FULL DATASET
 
@@ -70,6 +69,8 @@ if st.session_state.first_run == False:
 
     if show_statistics:
         #display the statistics
+        st.write('Demand statistics')
+
         st.write('Total items:', total_items)
         st.write('First data:', first_data)
         st.write('Last data:', last_data)
