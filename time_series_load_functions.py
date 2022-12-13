@@ -2,8 +2,23 @@
 def ts_load(filename):
 
     import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+    import os
+    import streamlit as st
 
-    df = pd.read_csv(filename)
+    #check if it exists before opening it
+    if os.path.exists(filename)==False:
+            #ask the user to upload the file
+            st.write('Please upload the file')
+            with st.form(key='my_form'):
+                uploaded_file = st.file_uploader("Choose a file", type="csv")
+                submit_button = st.form_submit_button(label='Submit')
+                filename = uploaded_file.name
+            if uploaded_file is not None:
+                # Convert the file to an opencv image.
+                df = pd.read_csv(uploaded_file)
+
+    else:        
+        df = pd.read_csv(filename)
 
     #create a new dataset with only ITEMNUMBER, DEMANDDATE and DEMANDQUANTITY columns
     df2 = df[['ITEMNUMBER', 'DEMANDDATE', 'DEMANDQUANTITY']]
