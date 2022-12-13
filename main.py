@@ -29,18 +29,25 @@ if st.session_state.first_run == False:
         st.session_state.first_run = True
         st.experimental_rerun()
 
-#add a selectbox on the left to select if showing debug information
-st.session_state.show_debug = st.sidebar.checkbox('Show debug information', value=False)
-
 #add a selectbox on the left of the screen to select if showing statistics for the full dataset
-show_statistics = st.sidebar.checkbox('Show statistics for the full dataset', value=False)
+show_statistics = st.sidebar.checkbox('Show dataset statistics', value=False)
+
+#add a selectbox on the left to select if showing forecast details
+st.session_state.show_forecast_details = st.sidebar.checkbox('Show forecast details', value=False)
+
+#add a selectbox on the left to select if exporting logs
+st.session_state.export_logs = st.sidebar.checkbox('Export logs ', value=False)
+
+#add a selectbox on the left to select if exporting logs and datasets as txt files
+st.session_state.export_forecasts = st.sidebar.checkbox('Export forecasts ', value=False)
+
 
 
 
 #0.1 LOAD THE DATASET
 
 if st.session_state.first_run:
-    historical_demand_monthly = prepare_dataset(filename='demand1.csv', item='All',  rows='All')  ##item='All', rows='All' are deafult
+    historical_demand_monthly = prepare_dataset(filename='demand.csv', item='All',  rows='All')  ##item='All', rows='All' are deafult
     
     if historical_demand_monthly is not None:
         st.session_state.hdm = historical_demand_monthly
@@ -190,8 +197,9 @@ if historical_demand_monthly is not None: #check if proper dataset was loaded
                 #log progress
                 start_time = pd.to_datetime('today').strftime("%Y-%m-%d %H:%M:%S")
 
-                with open(log_file, 'a') as f:
-                    f.write('Forecasting item ' + str(item_position+1) + ' of ' + str(len(items)) +': ' + item + ' started at ' + start_time +  '\n')
+                if st.session_state['log'] == True:
+                    with open(log_file, 'a') as f:
+                        f.write('Forecasting item ' + str(item_position+1) + ' of ' + str(len(items)) +': ' + item + ' started at ' + start_time +  '\n')
 
                 #run the forecast and get the evaluation metrics
                 from forecasting_compute import forecast as forecast_compute
@@ -205,13 +213,14 @@ if historical_demand_monthly is not None: #check if proper dataset was loaded
                 forecast = forecast.append(forecast_item)
                 evaluation_metrics = evaluation_metrics.append(evaluation_metrics_item)
 
-                #get the timestamp for the end of the forecast
-                end_time = pd.to_datetime('today').strftime('%Y-%m-%d %H:%M:%S')
+                if st.session_state['log'] == True:
+                    #get the timestamp for the end of the forecast
+                    end_time = pd.to_datetime('today').strftime('%Y-%m-%d %H:%M:%S')
 
-                #write the evaluation metrics to the log file
-                with open(log_file, 'a') as f:
-                    f.write('Forecast completed at ' + end_time +  '\n')
-                    f.write('Evaluation metrics: ' + str(evaluation_metrics_item) +  '\n')  
+                    #write the evaluation metrics to the log file
+                    with open(log_file, 'a') as f:
+                        f.write('Forecast completed at ' + end_time +  '\n')
+                        f.write('Evaluation metrics: ' + str(evaluation_metrics_item) +  '\n')  
 
             #4. SHOW THE RESULTS
 
@@ -229,7 +238,7 @@ if historical_demand_monthly is not None: #check if proper dataset was loaded
                 st.write('Evaluation metrics', evaluation_metrics.drop(['item'], axis=1))
 
             else:
-                if st.session_state.show_debug:
+                if st.session_state.show_forecast_details:
                     st.write('Evaluation metrics (showing first 10000 rows')
                     st.write(evaluation_metrics.head(10000))
 
@@ -241,7 +250,7 @@ if historical_demand_monthly is not None: #check if proper dataset was loaded
                 #reset evaluation_metrics index
                 evaluation_metrics_summary = evaluation_metrics.reset_index()
 
-                if st.session_state.show_debug:
+                if st.session_state.show_forecast_details:
                     st.write(evaluation_metrics_summary.head(10000))
 
                 #select only the records with index = 'maape'
@@ -261,14 +270,15 @@ if historical_demand_monthly is not None: #check if proper dataset was loaded
 
                 #export to a text file the forecast and the evaluation metrics
                 #check if forecast_results folder exists, if not create it
-                if not os.path.exists('forecast_results'):
-                    os.makedirs('forecast_results')
+                if st.session_state.export_results:                
+                    if not os.path.exists('forecast_results'):
+                        os.makedirs('forecast_results')
 
-                timestamp = pd.to_datetime('today').strftime('%Y%m%d%H%M%S')
-                forecast_csv = 'forecast_results/forecast_' + timestamp + '.csv'
-                evaluation_metrics_csv = 'forecast_results/evaluation_metrics_' + timestamp + '.csv'
-                #export the forecast and the evaluation metrics to csv files
-                forecast.to_csv(forecast_csv, index=False)
-                evaluation_metrics.to_csv(evaluation_metrics_csv, index=False)
+                    timestamp = pd.to_datetime('today').strftime('%Y%m%d%H%M%S')
+                    forecast_csv = 'forecast_results/forecast_' + timestamp + '.csv'
+                    evaluation_metrics_csv = 'forecast_results/evaluation_metrics_' + timestamp + '.csv'
+                    #export the forecast and the evaluation metrics to csv files
+                    forecast.to_csv(forecast_csv, index=False)
+                    evaluation_metrics.to_csv(evaluation_metrics_csv, index=False)
 
 
