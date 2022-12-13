@@ -39,7 +39,7 @@ st.session_state.show_forecast_details = st.sidebar.checkbox('Show forecast deta
 st.session_state.export_logs = st.sidebar.checkbox('Export logs ', value=False)
 
 #add a selectbox on the left to select if exporting logs and datasets as txt files
-st.session_state.export_forecasts = st.sidebar.checkbox('Export forecasts ', value=False)
+st.session_state.export_results = st.sidebar.checkbox('Export results ', value=False)
 
 
 
@@ -197,7 +197,7 @@ if historical_demand_monthly is not None: #check if proper dataset was loaded
                 #log progress
                 start_time = pd.to_datetime('today').strftime("%Y-%m-%d %H:%M:%S")
 
-                if st.session_state['log'] == True:
+                if st.session_state.export_logs:
                     with open(log_file, 'a') as f:
                         f.write('Forecasting item ' + str(item_position+1) + ' of ' + str(len(items)) +': ' + item + ' started at ' + start_time +  '\n')
 
@@ -213,7 +213,7 @@ if historical_demand_monthly is not None: #check if proper dataset was loaded
                 forecast = forecast.append(forecast_item)
                 evaluation_metrics = evaluation_metrics.append(evaluation_metrics_item)
 
-                if st.session_state['log'] == True:
+                if st.session_state.export_logs:
                     #get the timestamp for the end of the forecast
                     end_time = pd.to_datetime('today').strftime('%Y-%m-%d %H:%M:%S')
 
