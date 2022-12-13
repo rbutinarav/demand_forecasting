@@ -20,21 +20,28 @@ if 'hdm' not in st.session_state:
 
 #0. LOAD THE DATASET
 
-if st.session_state.first_run:
-    #load the dataset
-    myfilename='demand.csv'
-    #check if it exists before opening it
-    if os.path.exists(myfilename)==False:
-        #ask the user to upload the file
-        st.write('Please upload the file')
-        with st.form(key='my_form'):
-            uploaded_file = st.file_uploader("Choose a file", type="csv")
-            submit_button = st.form_submit_button(label='Submit')
-        if uploaded_file is not None:
-            myfilename = uploaded_file.name
 
-    if os.path.exists(myfilename)==True:
-        prepare_dataset(filename=myfilename, item='All',  rows='All')  ##item='All', rows='All' are deafult
+if False: #check if the file exists before opening it, if not ask the user to upload it
+    if st.session_state.first_run:
+        #load the dataset
+        myfilename='demand.csv'
+        #check if it exists before opening it
+        if os.path.exists(myfilename)==False:
+            #ask the user to upload the file
+            st.write('Please upload the file')
+            with st.form(key='my_form'):
+                uploaded_file = st.file_uploader("Choose a file", type="csv")
+                submit_button = st.form_submit_button(label='Submit')
+            if uploaded_file is not None:
+                myfilename = uploaded_file.name
+
+        if os.path.exists(myfilename)==True:
+            prepare_dataset(filename=myfilename, item='All',  rows='All')  ##item='All', rows='All' are deafult
+            st.session_state.first_run = False
+
+if True:
+    if st.session_state.first_run:
+        prepare_dataset(filename='demand1.csv', item='All',  rows='All')  ##item='All', rows='All' are deafult
         st.session_state.first_run = False
 
 if st.session_state.first_run == False:    
@@ -264,10 +271,3 @@ if st.session_state.first_run == False:
                 evaluation_metrics.to_csv(evaluation_metrics_csv, index=False)
 
 
-    #ERRORS:
-    #87801285 error using ARIMA
-    #87801285
-    #00405835 error using ARIMA
-    #D142950 error using ARIMA
-
-    #IGNORE: 87801285,87801285,00405835,D142950,87295236,51508759

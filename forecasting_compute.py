@@ -47,7 +47,7 @@ def forecast(df, test_periods, periods, model_list):
                                     error_action='ignore',
                                     supress_warnings=True, #default: True
                                     stepwise=True, #default: True
-                                    iformation_criterion='aic') #default: aic, other options: bic, aicc, oob)
+                                    information_criterion='aic') #default: aic, other options: bic, aicc, oob)
         
         #ARIMA parameters explained: https://alkaline-ml.com/pmdarima/modules/generated/pmdarima.arima.auto_arima.html
         
