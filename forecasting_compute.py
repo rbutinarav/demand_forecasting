@@ -1,4 +1,4 @@
-def forecast(df, test_periods, periods, model_list):
+def forecast(df, test_periods, periods, model_list, seasonal=True, trend=True):
 
     import streamlit as st
     import pandas as pd
@@ -39,7 +39,7 @@ def forecast(df, test_periods, periods, model_list):
                                     start_q=2, #order of moving average (default q=2)
                                     max_q=5, #(default q=5)
                                     start_P=1, #number of seasonal autoregressive terms (default P=1)
-                                    seasonal=True, #default: True
+                                    seasonal=seasonal, #default: True
                                     m=12, #periodicity of the time series (default =1) for monthly data m=12
                                     D=None, #order of seasonal differencing (default D=None)
                                     n_fits=10, #number of fits to try (default 10)
@@ -65,10 +65,14 @@ def forecast(df, test_periods, periods, model_list):
         #from statsmodels.tsa.statespace.exponential_smoothing import ExponentialSmoothing as ets #this is the new version of ets
         
         #build the model
-        #build a model for simple exponential smoothing
-        #ets_model = ets(train, trend=None, seasonal=None).fit() #this build a model for simple exponential smoothing
-        #ets_model = ets(train, trend='add', seasonal=None).fit() #this build a model for double exponential smoothing
-        ets_model = ets(train, trend='add', seasonal='add').fit() #this build a model for triple exponential smoothing
+        seasonal_ets = None
+        trend_ets = None
+        if seasonal == True:
+            seasonal_ets='add'    
+        if trend == True:
+            trend_ets='add'
+        
+        ets_model = ets(train, trend=trend_ets, seasonal=seasonal_ets).fit() 
 
         #predict values for the test dataset and future periods
         #inizialize forecast_ets dataframe

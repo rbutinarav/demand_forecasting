@@ -41,8 +41,11 @@ st.session_state.export_logs = st.sidebar.checkbox('Export logs ', value=False)
 #add a selectbox on the left to select if exporting logs and datasets as txt files
 st.session_state.export_results = st.sidebar.checkbox('Export results ', value=False)
 
+#add a selectbox on the left to select if models should look for a seasonal component
+seasonal_check = st.sidebar.checkbox('Look for seasonality ', value=True)
 
-
+#add a selectbox on the left to select if models should look for a trend component
+trend_check = st.sidebar.checkbox('Look for trend ', value=True)
 
 #0.1 LOAD THE DATASET
 
@@ -69,18 +72,18 @@ if historical_demand_monthly is not None: #check if proper dataset was loaded
     total_items = historical_demand_monthly['item'].nunique()
 
     #get the last data
-    last_data = historical_demand_monthly['year_month'].max()
+    last_date = historical_demand_monthly['year_month'].max()
 
     #get the fist data
-    first_data = historical_demand_monthly['year_month'].min()
+    first_date = historical_demand_monthly['year_month'].min()
 
     if show_statistics:
         #display the statistics
         st.write('Demand statistics')
 
         st.write('Total items:', total_items)
-        st.write('First data:', first_data)
-        st.write('Last data:', last_data)
+        st.write('First date:', first_date)
+        st.write('Last date:', last_date)
         #st.write('Items with demand in the last 12 months:', items_last_12_months)
 
 
@@ -102,6 +105,14 @@ if historical_demand_monthly is not None: #check if proper dataset was loaded
 
     #add the option to start the forecast from a specific item
     start_from_item = st.sidebar.text_input('Start from item', value='')
+
+    #ask the user to specify the last month of the historical period
+    #last_date_cutoff = st.sidebar.date_input('Last date of the historical period')
+    #ask the user to specify the last year_month of the historical period
+    last_month_cutoff = st.sidebar.text_input('Historical dataset last month (YYYYMM)', value=last_date)
+    
+    historical_demand_monthly = historical_demand_monthly[historical_demand_monthly['year_month'] <= last_month_cutoff]
+
 
 
     if item_selected != '':
@@ -203,7 +214,7 @@ if historical_demand_monthly is not None: #check if proper dataset was loaded
 
                 #run the forecast and get the evaluation metrics
                 from forecasting_compute import forecast as forecast_compute
-                forecast_item, evaluation_metrics_item = forecast_compute(df, test_periods, periods, model_list)
+                forecast_item, evaluation_metrics_item = forecast_compute(df, test_periods, periods, model_list, seasonal=seasonal_check, trend=trend_check)
 
                 #add a column with the item number to the forecast and evaluation_metrics
                 forecast_item['item'] = item
@@ -281,4 +292,7 @@ if historical_demand_monthly is not None: #check if proper dataset was loaded
                     forecast.to_csv(forecast_csv, index=False)
                     evaluation_metrics.to_csv(evaluation_metrics_csv, index=False)
 
+##IDEAS FOR IMPROVEMENTS
+#additional statistics for the dataset
+#show results with total forecast for each item with the best model for the period
 
