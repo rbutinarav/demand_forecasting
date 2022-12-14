@@ -256,7 +256,7 @@ if historical_demand_monthly is not None: #check if proper dataset was loaded
                 #select only the records with index = 'maape'
                 evaluation_metrics_summary = evaluation_metrics_summary[evaluation_metrics_summary['index'] == 'maape']
                 #keep only the columns item and best model
-                evaluation_metrics_summary = evaluation_metrics_summary[['item', 'Best model']]
+                evaluation_metrics_summary = evaluation_metrics_summary[['item', 'Best model', 'Best model value']]
                 st.write(evaluation_metrics_summary)
                 #show a barchart showing for each item the best model
                 #groupby item and best model and count the number of records

@@ -135,6 +135,9 @@ def forecast(df, test_periods, periods, model_list):
         #add a column showing the best model
         evaluate_metrics['Best model'] = evaluate_metrics.idxmin(axis=1)
 
+        #add a column showing the metric value of the best model
+        evaluate_metrics['Best model value'] = evaluate_metrics.min(axis=1)
+
         #show the evaluation metrics
         #st.write('Evaluation metrics:', evaluate_metrics)
         #MAAPE https://www.sciencedirect.com/science/article/pii/S0169207016000121
