@@ -6,6 +6,7 @@
 import streamlit as st
 import pandas as pd
 from forecasting_dataset_load import prepare_dataset
+from forecasting_dataset_statistics import statistics
 import os
 
 #intialize the session state variable
@@ -29,23 +30,32 @@ if st.session_state.first_run == False:
         st.session_state.first_run = True
         st.experimental_rerun()
 
-#add a selectbox on the left of the screen to select if showing statistics for the full dataset
-show_statistics = st.sidebar.checkbox('Show dataset statistics', value=False)
+if len(st.session_state.hdm) > 0:
 
-#add a selectbox on the left to select if showing forecast details
-st.session_state.show_forecast_details = st.sidebar.checkbox('Show forecast details', value=False)
+    #add a selectbox on the left of the screen to select if showing statistics for the full dataset
+    show_statistics = st.sidebar.checkbox('Show dataset statistics', value=False)
 
-#add a selectbox on the left to select if exporting logs
-st.session_state.export_logs = st.sidebar.checkbox('Export logs ', value=False)
+    #add a selectbox on the left to select if showing forecast details
+    st.session_state.show_forecast_details = st.sidebar.checkbox('Show forecast details', value=False)
 
-#add a selectbox on the left to select if exporting logs and datasets as txt files
-st.session_state.export_results = st.sidebar.checkbox('Export results ', value=False)
+    #add a selectbox on the left to select if exporting logs
+    st.session_state.export_logs = st.sidebar.checkbox('Export logs ', value=False)
 
-#add a selectbox on the left to select if models should look for a seasonal component
-seasonal_check = st.sidebar.checkbox('Look for seasonality ', value=True)
+    #add a selectbox on the left to select if exporting logs and datasets as txt files
+    st.session_state.export_results = st.sidebar.checkbox('Export results ', value=False)
 
-#add a selectbox on the left to select if models should look for a trend component
-trend_check = st.sidebar.checkbox('Look for trend ', value=True)
+    #add a selectbox on the left to select if models should look for a seasonal component
+    seasonal_check = st.sidebar.checkbox('Look for seasonality ', value=True)
+
+    #add a selectbox on the left to select if models should look for a trend component
+    trend_check = st.sidebar.checkbox('Look for trend ', value=True)
+
+    #ask if keeping only items with positive demand in the last 12 months
+    st.session_state.keep_only_positive_demand = st.sidebar.checkbox('Keep only items with positive demand in the last 12 months', value=True)
+
+    #add a selectbox to select if showing items ordered by total demand or item number
+    order_by = st.sidebar.selectbox('Order by', ['Total demand', 'Item number'])
+
 
 #0.1 LOAD THE DATASET
 
@@ -77,21 +87,18 @@ if historical_demand_monthly is not None: #check if proper dataset was loaded
     #get the fist data
     first_date = historical_demand_monthly['year_month'].min()
 
-    if show_statistics:
-        #display the statistics
-        st.write('Demand statistics')
-
-        st.write('Total items:', total_items)
-        st.write('First date:', first_date)
-        st.write('Last date:', last_date)
-        #st.write('Items with demand in the last 12 months:', items_last_12_months)
-
-
+    statistics = statistics(historical_demand_monthly, display=show_statistics)
+    #statistics(historical_demand_monthly, display=show_statistics)
+    
+    
     #2. ASK THE USER INPUTS TO RUN THE FORECAST
+    
+    if st.session_state.keep_only_positive_demand:
 
-    #add a selectbox to select if showing items ordered by total demand or item number
-    order_by = st.sidebar.selectbox('Order by', ['Total demand', 'Item number'])
-
+        #from statistics, get the list of items where 'last 12 months with positive demand' is True
+        items_with_positive_demand = statistics[statistics['last 12 months with positive demand'] == True]
+        historical_demand_monthly = historical_demand_monthly[historical_demand_monthly['item'].isin(items_with_positive_demand['item'])]
+            
     if order_by == 'Total demand':
         items_ordered = historical_demand_monthly.groupby('item')['demand'].sum().sort_values(ascending=False).index.tolist()
     else:
@@ -106,12 +113,11 @@ if historical_demand_monthly is not None: #check if proper dataset was loaded
     #add the option to start the forecast from a specific item
     start_from_item = st.sidebar.text_input('Start from item', value='')
 
-    #ask the user to specify the last month of the historical period
-    #last_date_cutoff = st.sidebar.date_input('Last date of the historical period')
     #ask the user to specify the last year_month of the historical period
     last_month_cutoff = st.sidebar.text_input('Historical dataset last month (YYYYMM)', value=last_date)
     
     historical_demand_monthly = historical_demand_monthly[historical_demand_monthly['year_month'] <= last_month_cutoff]
+    total_items = historical_demand_monthly['item'].nunique()
 
 
 
@@ -132,7 +138,11 @@ if historical_demand_monthly is not None: #check if proper dataset was loaded
 
         #ask user to define the number of periods to forecast
         periods=st.slider('Number of periods to forecast', min_value=1, max_value=36, key='periods', value=12)
-        historical_periods=st.slider('Historical periods to analyze', min_value=1, max_value=year_months, key='historical_periods', value=min(year_months, 48))
+        if year_months > 1:
+            historical_periods=st.slider('Historical periods to analyze', min_value=1, max_value=year_months, key='historical_periods', value=min(year_months, 48))
+        else:
+            historical_periods=1
+        
         test_periods=st.slider('Test periods', min_value=0, max_value=year_months, key='test_periods', value=min(round(year_months*0.2),12))
         #allow to restrict the number of items to be forecasted to 1000
         if item_selected == 'All':
@@ -241,12 +251,13 @@ if historical_demand_monthly is not None: #check if proper dataset was loaded
             st.write('Number of items processed: ', len(items))
 
             if item_selected != 'All':
-                st.write ('Forecast for item', item)
                 #display data for the selected item only
-
+                st.write ('Forecast for item', item)
+                
                 st.line_chart(forecast.drop(['item'], axis=1))
-                st.write(forecast.drop(['item'], axis=1))
-                st.write('Evaluation metrics', evaluation_metrics.drop(['item'], axis=1))
+                if st.session_state.show_forecast_details:                
+                    st.write(forecast.drop(['item'], axis=1))
+                    st.write('Evaluation metrics', evaluation_metrics.drop(['item'], axis=1))
 
             else:
                 if st.session_state.show_forecast_details:
@@ -256,7 +267,7 @@ if historical_demand_monthly is not None: #check if proper dataset was loaded
                     st.write('Forecast (showing first 10000 rows')
                     st.write(forecast.head(10000))
                 
-                
+            
                 st.write('Evaluation metrics summary')
                 #reset evaluation_metrics index
                 evaluation_metrics_summary = evaluation_metrics.reset_index()
@@ -288,9 +299,19 @@ if historical_demand_monthly is not None: #check if proper dataset was loaded
                     timestamp = pd.to_datetime('today').strftime('%Y%m%d%H%M%S')
                     forecast_csv = 'forecast_results/forecast_' + timestamp + '.csv'
                     evaluation_metrics_csv = 'forecast_results/evaluation_metrics_' + timestamp + '.csv'
-                    #export the forecast and the evaluation metrics to csv files
-                    forecast.to_csv(forecast_csv, index=False)
-                    evaluation_metrics.to_csv(evaluation_metrics_csv, index=False)
+    
+
+                    #export the forecast and the evaluation metrics to csv files (with time stamp)
+                    forecast.to_csv(forecast_csv, index=True)
+                    evaluation_metrics_summary.to_csv(evaluation_metrics_csv, index=False)
+
+                    #overwrite forecast and eval files
+                    #export the forecast and the evaluation metrics to csv files (without time stamp)
+                    forecast.to_csv('forecast_results/forecast.csv', index=True)
+                    evaluation_metrics.to_csv('forecast_results/evaluation_metrics.csv', index=True)
+
+                
+
 
 ##IDEAS FOR IMPROVEMENTS
 #additional statistics for the dataset

@@ -77,7 +77,7 @@ def forecast(df, test_periods, periods, model_list, seasonal=True, trend=True):
         #predict values for the test dataset and future periods
         #inizialize forecast_ets dataframe
         forecast_ets = pd.DataFrame()
-        forecast_ets['ETS'] = ets_model.predict(start=train_periods, end=len(df)+periods)
+        forecast_ets['ETS'] = ets_model.predict(start=train_periods, end=len(df)+periods-1)
 
         #replace all negative values with 0
         forecast_ets[forecast_ets < 0] = 0
@@ -142,8 +142,7 @@ def forecast(df, test_periods, periods, model_list, seasonal=True, trend=True):
         #add a column showing the metric value of the best model
         evaluate_metrics['Best model value'] = evaluate_metrics.min(axis=1)
 
-        #show the evaluation metrics
-        #st.write('Evaluation metrics:', evaluate_metrics)
+
         #MAAPE https://www.sciencedirect.com/science/article/pii/S0169207016000121
 
         #Choosing the right forecasting metric is not straightforward.
