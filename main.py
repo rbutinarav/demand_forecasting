@@ -6,7 +6,7 @@
 import streamlit as st
 import pandas as pd
 from forecasting_dataset_load import prepare_dataset
-from forecasting_dataset_statistics import statistics
+from forecasting_dataset_statistics import statistics as stat
 import os
 
 #intialize the session state variable
@@ -18,6 +18,9 @@ if 'show_debug' not in st.session_state:
 
 if 'hdm' not in st.session_state:
     st.session_state.hdm = pd.DataFrame()
+
+if 'statistics' not in st.session_state:
+    st.session_state.statistics = None
 
 
 #0.0 SHOW MAIN PAGE
@@ -87,10 +90,18 @@ if historical_demand_monthly is not None: #check if proper dataset was loaded
     #get the fist data
     first_date = historical_demand_monthly['year_month'].min()
 
-    statistics = statistics(historical_demand_monthly, display=show_statistics)
-    #statistics(historical_demand_monthly, display=show_statistics)
-    
-    
+
+    if len(st.session_state.statistics) == 0:
+        st.session_state.statistics = stat(historical_demand_monthly, display=False)
+
+    statistics = st.session_state.statistics
+
+    if show_statistics:
+        st.write('Dataset statistics')
+        stat(historical_demand_monthly, statistics, display=True)
+
+
+ 
     #2. ASK THE USER INPUTS TO RUN THE FORECAST
     
     if st.session_state.keep_only_positive_demand:
