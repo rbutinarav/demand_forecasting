@@ -160,7 +160,7 @@ if historical_demand_monthly is not None: #check if proper dataset was loaded
             number_items=st.slider('Number items to be processed - will apply a cutoff based on the sorting criteria', min_value=1, max_value=total_items+1, key='number_items', value=min(total_items, 10))
         
         #ask the user to choose if using ARIMA, Prophet or both
-        model_list = st.multiselect('Select model', ['ARIMA', 'Prophet', 'ETS'], default=['ARIMA', 'ETS', 'Prophet'])
+        model_list = st.multiselect('Select model', ['ARIMA', 'ETS', 'Prophet', 'Neural Prophet'], default=['Neural Prophet'])
 
         #show a button to run the forecast
         if st.button('Run forecast'):

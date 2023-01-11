@@ -118,6 +118,40 @@ def forecast(df, test_periods, periods, model_list, seasonal=True, trend=True):
         forecast = pd.concat([forecast, forecast_pro_renamed], axis=1)
 
 
+    
+    if 'Neural Prophet' in model_list:
+    ##5.3 RUN FORECASTING USING NEURAL PROPHET - TRAINING DATASET
+
+        from neuralprophet import NeuralProphet
+
+        npro_model = NeuralProphet()
+
+        #create a df_pro dataframe with the columns ds and y renamed into year_month and demand
+
+        #restore the index
+        df_npro = df.reset_index(inplace=True)
+        df_npro = df.rename(columns={'year_month': 'ds', 'demand': 'y'})
+
+        #build the model
+        npro_model.fit(df_npro)
+
+        #create a dataframe with the testing and future periods
+        future = npro_model.make_future_dataframe(periods=periods, freq='MS', include_history=True)
+        test_and_future = future.iloc[train_periods:]
+        #predict values
+        forecast_npro = npro_model.predict(test_and_future)
+
+        #create forecast_pro_renamed with only the columns ds and yhat renamed into year_month and demand
+        forecast_npro_renamed = forecast_npro[['ds', 'yhat']].rename(columns={'ds': 'year_month', 'yhat': 'Neural Prophet'})
+        forecast_npro_renamed = forecast_npro_renamed.set_index('year_month')
+
+        #replace all negative values with 0
+        forecast_npro_renamed[forecast_npro_renamed < 0] = 0
+
+        #add to the forecast dataframe
+        forecast = pd.concat([forecast, forecast_npro_renamed], axis=1)
+
+
     #if any model is selected, show the forecast and the evaluation metrics
     if len(model_list)>0:
         #st.write('Forecasting results')

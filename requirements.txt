@@ -1,2 +1,3 @@
 pmdarima
 prophet
+neuralprophet
