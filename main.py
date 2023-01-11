@@ -20,8 +20,7 @@ if 'hdm' not in st.session_state:
     st.session_state.hdm = pd.DataFrame()
 
 if 'statistics' not in st.session_state:
-    st.session_state.statistics = None
-
+    st.session_state.statistics = pd.DataFrame()
 
 #0.0 SHOW MAIN PAGE
 
@@ -90,7 +89,7 @@ if historical_demand_monthly is not None: #check if proper dataset was loaded
     #get the fist data
     first_date = historical_demand_monthly['year_month'].min()
 
-
+    #check if st.session_state.statistics is empty
     if len(st.session_state.statistics) == 0:
         st.session_state.statistics = stat(historical_demand_monthly, display=False)
 
