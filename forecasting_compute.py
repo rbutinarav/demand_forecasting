@@ -121,6 +121,7 @@ def forecast(df, test_periods, periods, model_list, seasonal=True, trend=True):
     
     if 'Neural Prophet' in model_list:
     ##5.3 RUN FORECASTING USING NEURAL PROPHET - TRAINING DATASET
+    #set epochs to 50
 
         from neuralprophet import NeuralProphet
 
@@ -129,20 +130,23 @@ def forecast(df, test_periods, periods, model_list, seasonal=True, trend=True):
         #create a df_pro dataframe with the columns ds and y renamed into year_month and demand
 
         #restore the index
-        df_npro = df.reset_index(inplace=True)
+        if 'Prophet' not in model_list:
+            df_npro = df.reset_index(inplace=True)
+        
         df_npro = df.rename(columns={'year_month': 'ds', 'demand': 'y'})
 
         #build the model
-        npro_model.fit(df_npro)
+        npro_model.fit(df_npro, freq='MS', epochs=50)
 
         #create a dataframe with the testing and future periods
-        future = npro_model.make_future_dataframe(periods=periods, freq='MS', include_history=True)
+        future = npro_model.make_future_dataframe(df_npro, periods=periods, n_historic_predictions=len(df))
         test_and_future = future.iloc[train_periods:]
         #predict values
         forecast_npro = npro_model.predict(test_and_future)
 
         #create forecast_pro_renamed with only the columns ds and yhat renamed into year_month and demand
-        forecast_npro_renamed = forecast_npro[['ds', 'yhat']].rename(columns={'ds': 'year_month', 'yhat': 'Neural Prophet'})
+
+        forecast_npro_renamed = forecast_npro[['ds', 'yhat1']].rename(columns={'ds': 'year_month', 'yhat1': 'Neural Prophet'})
         forecast_npro_renamed = forecast_npro_renamed.set_index('year_month')
 
         #replace all negative values with 0
@@ -184,3 +188,7 @@ def forecast(df, test_periods, periods, model_list, seasonal=True, trend=True):
         #https://towardsdatascience.com/forecast-kpi-rmse-mae-mape-bias-cdc5703d242d
 
     return forecast, evaluate_metrics
+
+
+
+

@@ -1,3 +1,4 @@
 pmdarima
 prophet
+cargo
 neuralprophet
