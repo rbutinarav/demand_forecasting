@@ -57,6 +57,26 @@ def forecast(df, test_periods, periods, model_list, seasonal=True, trend=True):
         #add to the forecast dataframe
         forecast_arima.columns = ['ARIMA']
         forecast = pd.concat([forecast, forecast_arima], axis=1)
+        
+
+    if 'STL' in model_list:
+        ##3. RUN FORECASTING USING STL DECOMPOSITION
+        from statsmodels.tsa.seasonal import STL
+
+        #build the model
+        stl_model = STL(train, seasonal=seasonal, period=12).fit()
+
+        #predict values for the test dataset and future periods
+        #inizialize forecast_stl dataframe
+        forecast_stl = pd.DataFrame()
+        forecast_stl['STL'] = stl_model.predict(test_periods+periods)
+
+        #replace all negative values with 0
+        forecast_stl[forecast_stl < 0] = 0
+
+        #add to the forecast dataframe
+        forecast = pd.concat([forecast, forecast_stl], axis=1)
+
 
 
     if 'ETS' in model_list:
